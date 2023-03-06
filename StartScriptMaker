@@ -1,0 +1,441 @@
+#!/bin/bash 
+set -e
+
+function realfile() {
+	if [ ! -e "$1" ]; then
+		return 1
+	else
+		return 0
+	fi
+}
+
+function realdir() {
+	if [ ! -d "$1" ]; then
+		return 1
+	else
+		return 0
+	fi
+}
+
+function mksvrscript() {
+  # This function is being executed for each minecraft server
+  echo "Please enter the server root:"
+  echo ""
+  read -er rtpath
+  clear
+  
+  rtpath="${rtpath//"\ "/" "}"
+
+  # Real path?
+  if ! realdir "$rtpath"; then
+  	echo "Path not found! ($rtpath)"
+    echo "The script closes in 2 seconds."
+  	echo ""
+  	sleep 2
+  	clear
+  	exit 1
+  fi
+  # Relative path?
+  case $rtpath in
+    	/*) ;;
+    	*) rtpath=$("realpath" -L "$rtpath") ;;
+  esac
+
+  if [ -z "$srvname" ]; then
+    echo "Please enter the server filename (default: server.jar):"
+    echo ""
+    read -er srvname
+    clear
+    if [ -z "$srvname" ];
+    then
+    	srvname="server.jar"
+    fi
+  else
+    oldsrvname=$srvname
+    echo "Please enter the server filename (default: $oldsrvname):"
+    echo ""
+    read -re srvname
+    clear
+    if [ -z "$srvname" ];
+    then
+    	srvname="$oldsrvname"
+    fi
+  fi
+  srvpath="$rtpath/$srvname"
+
+  # Real file?
+  if ! realfile "$srvpath"; then
+  	echo "File not found! ($srvpath)"
+    echo "The script closes in 2 seconds."
+  	echo ""
+  	sleep 2
+  	clear
+  	exit 1
+  fi
+
+
+  # -- Java path --
+  echo "Please enter the Java path (default: java):"
+  echo ""
+  read -er javapath
+  clear
+  
+  javapath="${javapath//"\ "/" "}"
+
+  if [ -z "$javapath" ]; then
+    javapath="java"
+  elif [ $javapath != "java" ]; then
+    # Real file?
+    if ! realfile $javapath; then
+      echo "File not found! ($javapath)"
+      echo "The script closes in 2 seconds."
+      echo ""
+      sleep 2
+      clear
+      exit 1
+	fi
+  	# Relative path?
+  	case $javapath in
+    	  	/*) ;;
+    	  	*) javapath=$(realpath -L $javapath) ;;
+  	esac
+  fi
+
+
+  # -- Launch args --
+  echo "Please enter the minimum memory allocation (default: 512M):"
+  echo ""
+  read -er minmem
+  if [ -z "$minmem" ];
+  then
+  	minmem="512M"
+  fi
+  clear
+
+  echo "Please enter the maximum memory allocation (default: 8G):"
+  echo ""
+  read -er maxmem
+  if [ -z "$maxmem" ];
+  then
+  	maxmem="512M"
+  fi
+  clear
+
+  echo "Please enter additional Java launch arguments (optional):"
+  echo ""
+  read -er jargs
+  clear
+
+  echo "Please enter the server launch arguments (default: nogui):"
+  echo ""
+  read -er largs
+  clear
+  if [ -z "$largs" ];
+  then
+  	largs="nogui"
+  fi
+
+  # -- Write config file --
+  touch "$rtpath/start.cfg"
+  echo "javapath=\"$javapath\"" > "$rtpath/start.cfg"
+  echo "srvname=\"$srvname\"" >> "$rtpath/start.cfg"
+  echo "minmem=\"$minmem\"" >> "$rtpath/start.cfg"
+  echo "maxmem=\"$maxmem\"" >> "$rtpath/start.cfg"
+  echo "jargs=\"$jargs\"" >> "$rtpath/start.cfg"
+  echo "largs=\"$largs\"" >> "$rtpath/start.cfg"
+
+  clear
+
+  # -- Write script --
+  touch "$rtpath/start.sh"
+  chmod +x "$rtpath/start.sh"
+  echo "#!/bin/bash" > "$rtpath/start.sh"
+  echo "source ./start.cfg" >> "$rtpath/start.sh"
+  echo " " >> "$rtpath/start.sh"
+  echo "echo \"Server is starting...\"" >> "$rtpath/start.sh"
+  echo "echo \" \"" >> "$rtpath/start.sh"
+  echo "echo \"\$javapath \$jargs -Xms\$minmem -Xmx\$maxmem -jar \$srvname \$largs\"" >> "$rtpath/start.sh"
+  echo "echo \" \"" >> "$rtpath/start.sh"
+  echo " " >> "$rtpath/start.sh"
+  echo "\$javapath \$jargs -Xms\$minmem -Xmx\$maxmem -jar \$srvname \$largs" >> "$rtpath/start.sh"
+  echo " " >> "$rtpath/start.sh"
+  echo "echo \" \"" >> "$rtpath/start.sh"
+  echo "read -n1 -r -p \"Press any key to close...\"" >> "$rtpath/start.sh"
+  echo "echo \" \"" >> "$rtpath/start.sh"
+
+  clear
+
+  echo "Done!"
+  echo ""
+  sleep 1
+
+  clear
+}
+
+clear
+echo "This is mgsmemebook's StartScriptMaker-script (V.1.2)"
+echo ""
+sleep 1.5
+clear
+echo "Create a \"global\" start script, in which all other start script will be executed? (Y,n)"
+echo ""
+read -r script2
+clear
+if [ "$script2" = "n" ];
+then
+	script2=false;
+elif [ "$script2" = "N" ];
+then
+	script2=false
+else
+	script2=true
+fi
+clear
+
+if [ "$script2" = true ]; then
+  echo "Please enter the desired path. (Standard: ./):"
+  echo ""
+  read -er sc2path
+  clear
+
+  sc2path="${sc2path//"\ "/" "}"
+  
+  if [ -z "$sc2path" ]; then
+		sc2path="./"
+  fi
+
+  if ! realdir $sc2path; then
+	echo "Path not found! ($sc2path)"
+    echo "The script closes in 2 seconds."
+	echo ""
+	sleep 2
+  	clear
+	exit 1
+  fi
+
+  case $sc2path in
+	/*) ;;
+	*) sc2path=$(realpath -L $sc2path) ;;
+  esac
+
+  echo "Please enter the script filename (default: start server.sh):"
+  echo ""
+  read -er sc2name
+  clear
+  if [ -z "$sc2name" ];
+  then
+  	sc2name="start server.sh"
+  fi
+
+  # Create global start script
+  touch "$sc2path/$sc2name"
+  chmod +x "$sc2path/$sc2name"
+  echo "#!/bin/bash" > "$sc2path/$sc2name"
+
+  clear
+  echo "Done!"
+  echo ""
+  sleep 1
+  clear
+fi
+
+server=1
+create=true
+
+while [ "$create" = true ];
+do
+  echo " -- Server Start Script $server -- "
+  echo ""
+  sleep 1.5
+  clear
+  mksvrscript  # Creates a minecraft server start script
+
+  echo "Create another server start script? (y,N):"
+  echo ""
+  read -r anotherServer
+  clear
+
+  if [ "$anotherServer" = "y" ] || [ "$anotherServer" = "Y" ]; then
+    # Writes a scipt-launch-command to global start script
+    if [ $server = 1 ]; then
+      echo "cd \"$rtpath\" && konsole -e ./start.sh &" >> "$sc2path/$sc2name"
+    else
+      echo "sleep 0.5 && cd \"$rtpath\" && konsole -e ./start.sh &" >> "$sc2path/$sc2name"
+    fi
+    clear
+
+    ((server++))
+
+  else
+    # The rest of the global start script will be written later
+    create=false
+    break
+  fi
+
+done
+
+# -- Bungeecord --
+echo "Create a Bungeecord start script? (y,N):"
+echo ""
+read -r bungee
+clear
+if [ "$bungee" = "Y" ] || [ "$bungee" = "y" ]; then
+	bungee=true
+else
+	bungee=false
+fi
+
+if [ "$bungee" = true ]; then
+  echo " -- Bungeecord start script -- "
+  echo ""
+  sleep 1.5
+  clear
+	echo "Please enter the BungeeCord path. (default: $rtpath/Bungeecord):"
+	echo ""
+	read -re bungeepath
+	clear
+  
+	if [ -z "$bungeepath" ]; then
+		bungeepath="$rtpath/Bungeecord"
+	fi
+	
+  	bungeepath="${bungeepath//"\ "/" "}"
+	
+	if ! realdir "$bungeepath"; then
+		echo "Path not found! ($bungeepath)"
+        echo "The script closes in 2 seconds."
+		echo ""
+		sleep 2
+  	clear
+		exit 1
+	fi
+  	case $bungeepath in
+  	  	/*) ;;
+  	  	*) bungeepath=$(realpath -L "$bungeepath") ;;
+  	esac
+
+	echo "Please enter the Bungeecord server filename. (Standard: BungeeCord.jar):"
+	echo ""
+	read -er bungeefile
+	clear
+	if [ -z "$bungeefile" ];
+	then
+		bungeefile="BungeeCord.jar"
+	fi
+	if ! realfile "$bungeepath/$bungeefile"; then
+		echo "File not found! ($bungeepath/$bungeefile)"
+        echo "The script closes in 2 seconds."
+		echo ""
+		sleep 2
+  	clear
+		exit 1
+	fi
+
+	# -- Java path --
+	echo "Bitte enter the Java path (default: $javapath):"
+	echo ""
+	read -re bungeejavapath
+	clear
+	
+  	bungeejavapath="${bungeejavapath//"\ "/" "}"
+
+	if [ -z "$bungeejavapath" ];
+	then
+		bungeejavapath="$javapath"
+	elif [ "$bungeejavapath" != "java" ]; then
+		if ! realfile "$bungeejavapath"; then
+			echo "File not found! ($bungeejavapath)"
+            echo "The script closes in 2 seconds."
+			echo ""
+			sleep 2
+			exit 1
+		fi
+		case $bungeejavapath in
+			/*) ;;
+			*) bungeejavapath=$(realpath -L "$bungeejavapath") ;;
+		esac
+	fi
+
+	# -- Launch args --
+    echo "Please enter the minimum memory allocation (default: 128M):"
+	echo ""
+	read -er bungeeminmem
+	if [ -z "$bungeeminmem" ];
+	then
+		bungeeminmem="128M"
+	fi
+	clear
+
+	echo "Please enter the maximum memory allocation (default: 512M):"
+	echo ""
+	read -er bungeemaxmem
+	if [ -z "$bungeemaxmem" ];
+	then
+		bungeemaxmem="512M"
+	fi
+	clear
+
+	echo "Please enter additional Java launch arguments (optional):"
+	echo ""
+	read -er bungeejargs
+	clear
+
+    # -- Write config file --
+	touch "$bungeepath/start.cfg"
+	echo "javapath=\"$bungeejavapath\"" > "$bungeepath/start.cfg"
+	echo "srvname=\"$bungeefile\"" >> "$bungeepath/start.cfg"
+	echo "minmem=\"$bungeeminmem\"" >> "$bungeepath/start.cfg"
+	echo "maxmem=\"$bungeemaxmem\"" >> "$bungeepath/start.cfg"
+	echo "jargs=\"$bungeejargs\"" >> "$bungeepath/start.cfg"
+
+	clear
+
+	# -- Write script --
+	touch "$bungeepath/start.sh"
+	chmod +x "$bungeepath/start.sh"
+	echo "#!/bin/bash" > "$bungeepath/start.sh"
+	echo "source ./start.cfg" >> "$bungeepath/start.sh"
+	echo " " >> "$bungeepath/start.sh"
+	echo "echo \"Bungeecord is starting...\"" >> "$bungeepath/start.sh"
+	echo "echo \" \"" >> "$bungeepath/start.sh"
+	echo "echo \"\$javapath \$jargs -Xms\$minmem -Xmx\$maxmem -jar \$srvname\"" >> "$bungeepath/start.sh"
+	echo "echo \" \"" >> "$bungeepath/start.sh"
+	echo " " >> "$bungeepath/start.sh"
+	echo "\$javapath \$jargs -Xms\$minmem -Xmx\$maxmem -jar \$srvname" >> "$bungeepath/start.sh"
+    echo "echo \" \"" >> "$bungeepath/start.sh"
+    echo "read -n1 -r -p \"Press any key to close...\"" >> "$bungeepath/start.sh"
+    echo "echo \" \"" >> "$bungeepath/start.sh"
+	clear
+
+fi
+
+if [ "$script2" = true ]; then
+  # The rest of the global start file is being written here
+  if [ "$bungee" = false ]; then
+    if [ $server = 1 ]; then
+      echo "cd \"$rtpath\" && ./start.sh" >> "$sc2path/$sc2name"
+    else
+      echo "sleep 0.5 && cd \"$rtpath\" && ./start.sh" >> "$sc2path/$sc2name"
+    fi
+	echo "clear; exit" >> "$sc2path/$sc2name"
+	clear
+  else
+    if [ $server = 1 ]; then
+      echo "cd \"$rtpath\" && konsole -e ./start.sh &" >> "$sc2path/$sc2name"
+    else
+      echo "sleep 0.5 && cd \"$rtpath\" && konsole -e ./start.sh &" >> "$sc2path/$sc2name"
+    fi
+    echo "sleep 0.5 && cd \"$bungeepath\" && ./start.sh" >> "$sc2path/$sc2name"
+
+	echo "clear; exit" >> "$sc2path/$sc2name"
+	clear
+  fi
+fi
+
+echo "All done!"
+echo "The script closes in 2 seconds."
+echo ""
+sleep 2
+
+clear
+exit
